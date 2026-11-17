@@ -14,7 +14,6 @@ logging.basicConfig(
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 GROQ_API_KEY = os.environ["GROQ_API_KEY"]
-
 MODEL = "openai/gpt-oss-20b"
 
 app = Flask(__name__)
@@ -42,27 +41,18 @@ SYSTEM = """
 
 def telegram(method, data):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/{method}"
-
-    response = requests.post(
-        url,
-        json=data,
-        timeout=30
-    )
-
+    response = requests.post(url, json=data, timeout=30)
     response.raise_for_status()
-
     result = response.json()
 
     if not result.get("ok"):
-        raise RuntimeError(f"Telegram API error: {result}")
+        raise RuntimeError(f"Telegram error: {result}")
 
     logging.info("Telegram %s successful", method)
-
     return result
 
 
 def answer(chat_id, message_id, name, message):
-
     history = histories[chat_id]
 
     history.append({
@@ -78,26 +68,19 @@ def answer(chat_id, message_id, name, message):
             {"role": "system", "content": SYSTEM},
             *history
         ],
-        temperature=1.0,
-        max_tokens=180
+        temperature=0.8,
+        max_tokens=250
     )
 
     choice = result.choices[0]
 
-logging.info("Finish reason: %s", choice.finish_reason)
-logging.info("Groq result: %s", result)
+    logging.info("Finish reason: %s", choice.finish_reason)
 
-reply = choice.message.content
-
-if not reply or not reply.strip():
-    logging.error(
-        "Empty response. Finish reason: %s",
-        choice.finish_reason
-    )
-    return
+    reply = choice.message.content
 
     if not reply or not reply.strip():
         logging.error("Groq returned empty response")
+        history.pop()
         return
 
     reply = reply.strip()
@@ -118,15 +101,10 @@ if not reply or not reply.strip():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-
     update = request.get_json(silent=True) or {}
-
     message = update.get("message")
 
-    if not message:
-        return "ok", 200
-
-    if not message.get("text"):
+    if not message or not message.get("text"):
         return "ok", 200
 
     chat = message.get("chat", {})
@@ -146,24 +124,15 @@ def webhook():
 
     chat_id = chat["id"]
     message_id = message["message_id"]
-
     name = user.get("first_name", "Собеседник")
 
     logging.info(
         "New message from %s in chat %s: %s",
-        name,
-        chat_id,
-        text[:100]
+        name, chat_id, text[:100]
     )
 
     try:
-        answer(
-            chat_id,
-            message_id,
-            name,
-            text
-        )
-
+        answer(chat_id, message_id, name, text)
     except Exception:
         logging.exception("BOT RESPONSE FAILED")
 
