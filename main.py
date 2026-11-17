@@ -87,7 +87,7 @@ def webhook():
     name = user.get("first_name", "Собеседник")
 
     # Не отвечаем на каждое сообщение подряд
-    if random.random() < 0.30:
+    if True:
         try:
             answer(chat_id, message["message_id"], name, text)
         except Exception:
