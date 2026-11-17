@@ -62,16 +62,17 @@ def answer(chat_id, message_id, name, message):
 
     logging.info("Sending request to Groq: %s", MODEL)
 
-    result = ai.chat.completions.create(
-        model=MODEL,
-        messages=[
-            {"role": "system", "content": SYSTEM},
-            *history
-        ],
-        temperature=0.8,
-        max_tokens=250
-    )
-
+result = ai.chat.completions.create(
+    model=MODEL,
+    messages=[
+        {"role": "system", "content": SYSTEM},
+        *history
+    ],
+    temperature=0.7,
+    max_completion_tokens=1024,
+    reasoning_effort="low",
+    include_reasoning=False
+)
     choice = result.choices[0]
 
     logging.info("Finish reason: %s", choice.finish_reason)
