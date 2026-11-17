@@ -82,7 +82,19 @@ def answer(chat_id, message_id, name, message):
         max_tokens=180
     )
 
-    reply = result.choices[0].message.content
+    choice = result.choices[0]
+
+logging.info("Finish reason: %s", choice.finish_reason)
+logging.info("Groq result: %s", result)
+
+reply = choice.message.content
+
+if not reply or not reply.strip():
+    logging.error(
+        "Empty response. Finish reason: %s",
+        choice.finish_reason
+    )
+    return
 
     if not reply or not reply.strip():
         logging.error("Groq returned empty response")
