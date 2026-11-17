@@ -234,72 +234,80 @@ def answer(chat_id, message_id, name, text):
 # =========================
 
 @app.route("/webhook", methods=["POST"])
+
 def webhook():
+
+    import random
 
     update = request.get_json(silent=True) or {}
 
     message = update.get("message")
 
-    if not message:
-        return "ok", 200
+    if not message or not message.get("text"):
 
-    # Только текстовые сообщения
-    text = message.get("text")
-
-    if not text:
         return "ok", 200
 
     chat = message.get("chat", {})
 
-    # Только группы
-    if chat.get("type") not in (
-        "group",
-        "supergroup"
-    ):
+    if chat.get("type") not in ("group", "supergroup"):
+
         return "ok", 200
 
     user = message.get("from", {})
 
-    # Игнорируем сообщения других ботов
     if user.get("is_bot"):
+
         return "ok", 200
 
-    text = text.strip()
+    text = message["text"].strip()
 
-    if not text:
-        return "ok", 200
+    if not text or text.startswith("/"):
 
-    # Игнорируем команды
-    if text.startswith("/"):
         return "ok", 200
 
     chat_id = chat["id"]
+
     message_id = message["message_id"]
 
-    name = user.get(
-        "first_name",
-        "Собеседник"
-    )
+    name = user.get("first_name", "Собеседник")
+
+    bot_username = "PizdobolChaosBot"
+
+    mentioned = f"@{bot_username.lower()}" in text.lower()
+
+    replied = False
+
+    reply_to = message.get("reply_to_message", {})
+
+    reply_user = reply_to.get("from", {})
+
+    if reply_user.get("username", "").lower() == bot_username.lower():
+
+        replied = True
+
+    # Всегда отвечаем на обращение к боту.
+
+    # На остальные сообщения реагируем примерно в 25% случаев.
+
+    if not mentioned and not replied and random.random() > 0.25:
+
+        return "ok", 200
 
     logging.info(
-        "New message from %s in chat %s: %s",
-        name,
-        chat_id,
-        text[:200]
+
+        "PIZDOBOL реагирует на сообщение от %s: %s",
+
+        name, text[:200]
+
     )
 
     try:
-        answer(
-            chat_id,
-            message_id,
-            name,
-            text
-        )
+
+        answer(chat_id, message_id, name, text)
 
     except Exception:
-        logging.exception(
-            "Failed to process Telegram message"
-        )
+
+        logging.exception("Failed to process Telegram message")
 
     return "ok", 200
 
