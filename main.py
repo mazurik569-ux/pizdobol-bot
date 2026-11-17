@@ -73,6 +73,7 @@ result = ai.chat.completions.create(
     reasoning_effort="low",
     include_reasoning=False
 )
+
     choice = result.choices[0]
 
     logging.info("Finish reason: %s", choice.finish_reason)
